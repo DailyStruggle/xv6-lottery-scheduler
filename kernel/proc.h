@@ -23,6 +23,7 @@ struct cpu {
   // Cpu-local storage variables; see below
   struct cpu *cpu;
   struct proc *proc;           // The currently-running process.
+
 };
 
 extern struct cpu cpus[NCPU];
@@ -74,6 +75,9 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  
+  int tickets;
+  
 };
 
 // Process memory is laid out contiguously, low addresses first:

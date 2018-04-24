@@ -11,6 +11,10 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
+int total_tickets;
+
+
+
 static struct proc *initproc;
 
 int nextpid = 1;
@@ -144,7 +148,11 @@ fork(void)
   np->sz = proc->sz;
   np->parent = proc;
   *np->tf = *proc->tf;
-
+  
+  //enter lottery
+  np->tickets = proc->tickets;
+  total_tickets += np->tickets;
+	
   // Clear %eax so that fork returns 0 in the child.
   np->tf->eax = 0;
 
@@ -195,7 +203,10 @@ exit(void)
         wakeup1(initproc);
     }
   }
-
+  
+  total_tickets -= proc->tickets;
+  proc->tickets = 0;
+  
   // Jump into the scheduler, never to return.
   proc->state = ZOMBIE;
   sched();
@@ -256,7 +267,11 @@ void
 scheduler(void)
 {
   struct proc *p;
-
+  
+  acquire(&ptable.lock);
+  ptable.proc->tickets = 1;
+  release(&ptable.lock);
+  
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -444,3 +459,21 @@ procdump(void)
 }
 
 
+int
+settickets(int t){
+	if(t<1)return -1;
+	proc->tickets = t;
+	return 0;
+}
+int
+getpinfo(struct pstat*){
+	int i;
+	cprintf("  PID  |  TICKS");
+	cprintf("\n");
+	for(i=0; i<NPROCS; i++){
+		if(!pstat->inuse[i])
+			continue;
+		cprintf("%d  |  %s", pstat->pid[i], pstat->ticks[i]);
+		cprintf("\n");
+	}
+}
